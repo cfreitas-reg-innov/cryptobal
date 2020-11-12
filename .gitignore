@@ -127,3 +127,9 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# Data
+api_consumer/data/
+
+# Project specific
+binance architecture/

@@ -1,12 +1,12 @@
 # How to run for Binance
 ```
-python3 storeDataBinance.py btcusdt '26 Octobre 2020'
+python3 storeData.py Binance btcusdt '13 Novembre 2020'
 ```
 
 # How to run for Kraken
 ```
-python3 storeDataKraken.py XBT/USD '27 Octobre 2020'
-python3 storeDataKraken.py "XBT/USD,ETH/USD" '03 Novembre 2020'
+python3 storeData.py Kraken XBT/USD '13 Novembre 2020'
+python3 storeData.py Kraken "XBT/USD,ETH/USD" '13 Novembre 2020'
 ```
 
 ## Assets for Kraken
@@ -25,7 +25,7 @@ https://support.kraken.com/hc/en-us/articles/360000678446
 
 # How to run for Coinbase
 ```
-python3 storeDataCoinbase.py ETH-USD '29 Octobre 2020'
+python3 storeData.py Coinbase ETH-USD '13 Novembre 2020'
 ```
 
 ## Assets for Coinbase

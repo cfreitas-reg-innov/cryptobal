@@ -61,6 +61,9 @@ git push --set-upstream origin new_branch
 
 git checkout main # switches back to the main branch
 
+git push -d origin <branch_name> # deletes remote branch after Pull Request
+git branch -d <branch_name> # deletes local branch after Pull Request
+
 git status # to check the status of the commits and the branch
 
 git config --global core.editor "nano" # this is the text editor that I prefer

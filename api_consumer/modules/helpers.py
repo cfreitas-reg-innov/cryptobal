@@ -1,4 +1,4 @@
-import os, json
+import os, json, boto3
 from os.path import join
  
 def create_folder_structure(folder_name, currency, asset, messages):
@@ -26,3 +26,13 @@ def write_file(fullpath, content = False):
             file_object.write(']') # closes the list once there is no more content, i.e. the application is closed
         
         file_object.close()
+
+def upload_to_aws(local_path, bucket, s3_path, access_key, secret_key):
+    try:
+        s3 = boto3.client('s3', aws_access_key_id=access_key, aws_secret_access_key=secret_key)
+        s3.upload_file(local_path, bucket, s3_path)
+        print("Upload Successful: ", s3_path)
+        return True
+        
+    except Exception as e:
+        print(e)

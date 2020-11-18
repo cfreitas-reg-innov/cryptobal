@@ -25,7 +25,7 @@ class GetData():
         self.subscription_values = {'book-10':[], 'trade':[]}
         self.paths = set()
 
-        self.maxLength = 100
+        self.maxLength = 2**10
     
     # define stream connection instance
     def websocket_connection(self):
@@ -51,8 +51,8 @@ class GetData():
     def on_close(self):
         for fullpath in self.paths:
             write_file(fullpath) # closes the lists of trades and orderbooks once the program is over
-            upload_to_aws(fullpath, 'exchange-data-bucket', fullpath, self.access_key, self.secret_key)
-        
+            upload_to_aws(fullpath, 'exchange-data-bucket', fullpath, self.access_key, self.secret_key)    
+
         print("\n*End of processing")
 
     # run when websocket is initialised

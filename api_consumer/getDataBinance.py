@@ -25,15 +25,15 @@ class GetData():
         # initializing variables for aggTrades and trades
         self.aggTrade = {}
         self.trade = {}
-        self.maxLenTrades = 100 # updated for tests
+        self.maxLenTrades = 2**10 # updated for tests
         
         # intializing variables for orderbook
         self.orderbook = {}
         self.historical_orderbook = {}
         self.flag = False
         self.for_sync = 0
-        self.max_len = 100        # max lenght of orderbook instances per file
-        self.max_depth = 10        # max depth of each stored orderbook instance
+        self.max_len = 2**10        # max lenght of orderbook instances per file
+        self.max_depth = 100        # max depth of each stored orderbook instance
         self.debug = debug
         
         if self.debug:

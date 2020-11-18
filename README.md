@@ -81,3 +81,14 @@ It makes sense not to include system configuration files and data files.
 3. Push this branch to the repository
 4. Propose a Pull Request from the branch to the main branch
 
+<br>
+
+# AWS_keys.json
+This is the expected file structure for the document holding the AWS keys. This must be under "cryptobal/api_consumer/"
+
+```
+{
+    "access_key": "XXXXXXXXXXXXXXXXXXXX",
+    "secret_key": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+}
+```

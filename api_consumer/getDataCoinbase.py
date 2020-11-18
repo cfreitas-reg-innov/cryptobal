@@ -6,7 +6,7 @@ from modules.helpers import create_folder_structure, write_file, upload_to_aws
 
 class GetData():
 
-    def __init__(self, asset='BTC-EUR', folder_name = 'noname', debug = False):
+    def __init__(self, asset='BTC-USD', folder_name = 'noname', debug = False):
         with open('AWS_keys.json') as json_file:
             aws_keys = json.load(json_file)
 
@@ -25,7 +25,7 @@ class GetData():
         self.subscription_values = {'snapshot':'orderbook', 'l2update': 'orderbook', 'match':'trade'}
         self.paths = set()
 
-        self.maxLength = 100
+        self.maxLength = 2**10
    
     # define stream connection instance
     def websocket_connection(self):

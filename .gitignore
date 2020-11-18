@@ -133,3 +133,4 @@ api_consumer/data/
 
 # Project specific
 binance architecture/
+api_consumer/AWS_keys.json

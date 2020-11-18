@@ -1,11 +1,16 @@
-import websocket, requests, copy, json, os, time
+import websocket, copy, json, os, time
 from json import loads
 from os.path import join
 from datetime import datetime
-from modules.helpers import create_folder_structure, write_file
+from modules.helpers import create_folder_structure, write_file, upload_to_aws
 
 class GetData():
     def __init__(self, asset='["XBT/USD"]', folder_name='noname', debug = False):
+        with open('AWS_keys.json') as json_file:
+            aws_keys = json.load(json_file)
+
+        self.access_key = aws_keys["access_key"]
+        self.secret_key = aws_keys["secret_key"]
         
         # initializing string variables
         self.asset = asset.split(',')
@@ -20,7 +25,7 @@ class GetData():
         self.subscription_values = {'book-10':[], 'trade':[]}
         self.paths = set()
 
-        self.maxLength = 100
+        self.maxLength = 2**10
     
     # define stream connection instance
     def websocket_connection(self):
@@ -46,7 +51,8 @@ class GetData():
     def on_close(self):
         for fullpath in self.paths:
             write_file(fullpath) # closes the lists of trades and orderbooks once the program is over
-        
+            upload_to_aws(fullpath, 'exchange-data-bucket', fullpath, self.access_key, self.secret_key)    
+
         print("\n*End of processing")
 
     # run when websocket is initialised
@@ -80,6 +86,7 @@ class GetData():
     def process_message(self, data):
         message = copy.deepcopy(data)
         message_json = json.loads(message)
+        content = message_json[1]
         subscription = message_json[2]
         asset = message_json[3]
 
@@ -92,7 +99,7 @@ class GetData():
             self.paths.add(fullpath)
             
             try:
-                write_file(fullpath, subscription)
+                write_file(fullpath, content)
                 self.count[asset][1] += 1 
 
                 if self.count[asset][1] == self.maxLength:
@@ -102,7 +109,6 @@ class GetData():
             except Exception as e:
                 print(e)
             
-
 
         
 

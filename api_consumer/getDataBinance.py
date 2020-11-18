@@ -2,11 +2,16 @@ import websocket, requests, copy, json, os
 from json import loads
 from os.path import join
 from datetime import datetime
-from modules.helpers import create_folder_structure, write_file
+from modules.helpers import create_folder_structure, write_file, upload_to_aws
 
 class GetData():
     def __init__(self, asset='btcusdt', folder_name='noname', debug=False):
-        
+        with open('AWS_keys.json') as json_file:
+            aws_keys = json.load(json_file)
+
+        self.access_key = aws_keys["access_key"]
+        self.secret_key = aws_keys["secret_key"]
+
         # initializing string variables
         self.asset = asset
         self.aggTrade_stream = self.asset + "@aggTrade"
@@ -85,11 +90,12 @@ class GetData():
             # save aggTrade
             if len(self.aggTrade) == self.maxLenTrades :
                 path = join('data', self.folder_name, 'binance', self.asset, 'aggTrade/')
-                filename = str(aggTrade['E']) + '.txt'
+                filename = str(aggTrade['E']) + '.json'
                 with open(path + filename, 'w') as json_file:
                     json.dump(self.aggTrade, json_file)
                 # clean memory
                 self.aggTrade = {}
+                upload_to_aws(path + filename, 'exchange-data-bucket', path + filename, self.access_key, self.secret_key)
                 print('Aggregated trades saved.')
         except Exception as e:
             print(e)
@@ -102,11 +108,12 @@ class GetData():
             # save trade
             if len(self.trade) == self.maxLenTrades :
                 path = join('data', self.folder_name, 'binance', self.asset, 'trade/')
-                filename = str(trade['E']) + '.txt'
+                filename = str(trade['E']) + '.json'
                 with open(path + filename, 'w') as json_file:
                     json.dump(self.trade, json_file)
                 # clean memory
                 self.trade = {}
+                upload_to_aws(path + filename, 'exchange-data-bucket', path + filename, self.access_key, self.secret_key)
                 print('Trades saved.')
         except Exception as e:
             print(e)
@@ -154,13 +161,14 @@ class GetData():
                     # save orderbook
                     if len(self.historical_orderbook) == self.max_len :
                         path = join('data', self.folder_name, 'binance', self.asset, 'orderbook/')
-                        filename = str(data['E']) + '.txt'
+                        filename = str(data['E']) + '.json'
                         with open(path + filename, 'w') as json_file:
                             json.dump(self.historical_orderbook, json_file)
                         # clean memory
                         self.historical_orderbook = {}
                         if self.debug:
                             self.updates = []
+                        upload_to_aws(path + filename, 'exchange-data-bucket', path + filename, self.access_key, self.secret_key)
                         print('Orderbook saved: ', datetime.fromtimestamp(int(data['E'])/1000))
                 else:
                     print('Process out of sync. Abort.')

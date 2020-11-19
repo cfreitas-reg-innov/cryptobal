@@ -51,7 +51,7 @@ class GetData():
     def on_close(self):
         for fullpath in self.paths:
             write_file(fullpath) # closes the lists of trades and orderbooks once the program is over
-            upload_to_aws(fullpath, 'exchange-data-bucket', fullpath, self.access_key, self.secret_key)    
+            #upload_to_aws(fullpath, 'exchange-data-bucket', fullpath, self.access_key, self.secret_key)    
 
         print("\n*End of processing")
 
@@ -91,14 +91,15 @@ class GetData():
         asset = message_json[3]
 
         if type(message_json) is list:
-            date = datetime.now().date()
+            date = "{:%Y_%m_%d}".format(datetime.now())
             path = join('data', self.folder_name, 'kraken', asset, subscription + '/')
 
-            filename = asset.replace('/', '_') + '_' + str(self.count[subscription][0]) + '_' + str(date) + '.json'
-            fullpath = path + filename
-            self.paths.add(fullpath)
-            
             try:
+                filename = 'kraken_' + asset.replace('/', '_') + '_' + subscription + '_' + str(self.count[subscription][0]) + '_' + str(date) + '.json'
+                print(filename)
+                fullpath = path + filename
+                self.paths.add(fullpath)
+
                 write_file(fullpath, content)
                 self.count[asset][1] += 1 
 
@@ -107,12 +108,4 @@ class GetData():
                     self.count[asset][1] = 0
 
             except Exception as e:
-                print(e)
-            
-
-        
-
-        
-
-
-        
+                print(e)        

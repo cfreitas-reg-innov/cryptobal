@@ -51,7 +51,7 @@ class GetData():
     def on_close(self):
         for fullpath in self.paths:
             write_file(fullpath) # closes the lists of trades and orderbooks once the program is over
-            upload_to_aws(fullpath, 'exchange-data-bucket', fullpath, self.access_key, self.secret_key)
+            #upload_to_aws(fullpath, 'exchange-data-bucket', fullpath, self.access_key, self.secret_key)
 
         print("\n*End of processing")
 
@@ -72,7 +72,7 @@ class GetData():
                 
     # start and keep connection
     def run_forever(self):
-        if create_folder_structure(self.folder_name, 'coinbase', self.asset, ['trade', 'orderbook']):
+        if create_folder_structure(self.folder_name, 'coinbase', self.asset.replace('-', '/'), ['trade', 'orderbook']):
             self.ws.run_forever()
         else:
             print('\n*Please give another folder location')
@@ -82,13 +82,13 @@ class GetData():
         message_json = json.loads(data)
         message_type = self.subscription_values[message_json['type']]
 
-        date = datetime.now().date()
-        path = join('data', self.folder_name, 'coinbase', self.asset, message_type + '/')
+        date = "{:%Y_%m_%d}".format(datetime.now())
+        path = join('data', self.folder_name, 'coinbase', self.asset.replace('-', '/'), message_type + '/')
 
-        filename = message_type + '_' + str(self.count[message_type][0]) + '_' + str(date) + '.json'
+        filename = 'coinbase_' + self.asset.replace('-', '_') + '_' + message_type + '_' + str(self.count[message_type][0]) + '_' + str(date) + '.json'
         fullpath = path + filename
         self.paths.add(fullpath)
-
+            
         try:
             write_file(fullpath, message_json)
             self.count[message_type][1] += 1

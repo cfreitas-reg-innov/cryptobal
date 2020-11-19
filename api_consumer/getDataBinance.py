@@ -36,6 +36,9 @@ class GetData():
         self.max_depth = 10        # max depth of each stored orderbook instance
         self.debug = debug
         
+        # initializing counters for each type of subscription
+        self.count = {'aggTrade': 1, 'trade' : 1, 'orderbook' : 1} # counts the total number of files for each subscription
+
         if self.debug:
             self.updates = []           # for debugging
             
@@ -87,10 +90,15 @@ class GetData():
         try:
             aggTrade = copy.deepcopy(data)
             self.aggTrade[aggTrade['E']] = aggTrade
+
             # save aggTrade
             if len(self.aggTrade) == self.maxLenTrades :
+                date = "{:%Y_%m_%d}".format(datetime.now())
                 path = join('data', self.folder_name, 'binance', self.asset, 'aggTrade/')
-                filename = str(aggTrade['E']) + '.json'
+                filename = 'binance_' + self.asset + '_aggTrade_' + str(date) + '.json'
+
+                self.count['aggTrade'] += 1
+
                 with open(path + filename, 'w') as json_file:
                     json.dump(self.aggTrade, json_file)
                 # clean memory
@@ -107,8 +115,12 @@ class GetData():
             self.trade[trade['E']] = trade
             # save trade
             if len(self.trade) == self.maxLenTrades :
+                date = "{:%Y_%m_%d}".format(datetime.now())
                 path = join('data', self.folder_name, 'binance', self.asset, 'trade/')
-                filename = str(trade['E']) + '.json'
+                filename = 'binance_' + self.asset + '_trade_' + str(date) + '.json'
+
+                self.count['trade'] += 1
+
                 with open(path + filename, 'w') as json_file:
                     json.dump(self.trade, json_file)
                 # clean memory
@@ -160,8 +172,12 @@ class GetData():
                     
                     # save orderbook
                     if len(self.historical_orderbook) == self.max_len :
+                        date = "{:%Y_%m_%d}".format(datetime.now())
                         path = join('data', self.folder_name, 'binance', self.asset, 'orderbook/')
-                        filename = str(data['E']) + '.json'
+                        filename = 'binance_' + self.asset + '_orderbook_' + str(date) + '.json'
+
+                        self.count['orderbook'] += 1
+
                         with open(path + filename, 'w') as json_file:
                             json.dump(self.historical_orderbook, json_file)
                         # clean memory

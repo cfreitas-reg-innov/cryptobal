@@ -60,6 +60,7 @@ git commit -a -m 'message' # it is important to include a message about what was
 git push --set-upstream origin new_branch
 
 git checkout main # switches back to the main branch
+git stash save --keep-index --include-untracked # switch branch discarding changes
 
 git push -d origin <branch_name> # deletes remote branch after Pull Request
 git branch -d <branch_name> # deletes local branch after Pull Request
@@ -126,9 +127,9 @@ Once the file is created, the following commands will be used:
 docker build -t <image name> .
 
 # create a new container for each exchange:
-docker run -it -d --rm --name container_kraken -p 5001:5000 api_image "Kraken" "XBT/USD" "10 Novembre 2020" && 
-docker run -it -d --rm --name container_coinbase -p 5002:5000 api_image "Coinbase" "ETH-USD" "10 Novembre 2020" && 
-docker run -it -d --rm --name container_binance -p 5003:5000 api_image "Binance" "btcusdt" "10 Novembre 2020"
+docker run -it -d --rm --name container_kraken -p 5001:5000 api_image "Kraken" "XBT/USD" "21 Novembre 2020" && 
+docker run -it -d --rm --name container_coinbase -p 5002:5000 api_image "Coinbase" "ETH-USD" "21 Novembre 2020" && 
+docker run -it -d --rm --name container_binance -p 5003:5000 api_image "Binance" "btcusdt" "21 Novembre 2020"
 
 # start a previously created container
 docker container start container_kraken

@@ -127,9 +127,9 @@ Once the file is created, the following commands will be used:
 docker build -t <image name> .
 
 # create a new container for each exchange:
-docker run -it -d --rm --name container_kraken -p 5001:5000 api_image "Kraken" "XBT/USD" "21 Novembre 2020" && 
-docker run -it -d --rm --name container_coinbase -p 5002:5000 api_image "Coinbase" "ETH-USD" "21 Novembre 2020" && 
-docker run -it -d --rm --name container_binance -p 5003:5000 api_image "Binance" "btcusdt" "21 Novembre 2020"
+docker run -it -d --rm --name container_kraken -p 5001:5000 api_image "Kraken" "XBT/USD" "22 Novembre 2020" && 
+docker run -it -d --rm --name container_coinbase -p 5002:5000 api_image "Coinbase" "ETH-USD" "22 Novembre 2020" && 
+docker run -it -d --rm --name container_binance -p 5003:5000 api_image "Binance" "btcusdt" "22 Novembre 2020"
 
 # start a previously created container
 docker container start container_kraken

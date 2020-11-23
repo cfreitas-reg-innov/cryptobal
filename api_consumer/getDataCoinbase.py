@@ -40,7 +40,7 @@ class GetData():
     
     # catch message
     def on_message(self, message):
-        print(message)
+        #print(message)
         self.process_message(message)
             
     # catch errors
@@ -49,10 +49,6 @@ class GetData():
 
     # run when websocket is closed
     def on_close(self):
-        for fullpath in self.paths:
-            write_file(fullpath) # closes the lists of trades and orderbooks once the program is over
-            upload_to_aws(fullpath, 'exchange-data-bucket', fullpath, self.access_key, self.secret_key)
-
         print("\n*End of processing")
 
     # run when websocket is initialised
@@ -96,6 +92,8 @@ class GetData():
             if self.count[message_type][1] == self.maxLength:
                 self.count[message_type][0] += 1
                 self.count[message_type][1] = 0
+                write_file(fullpath) # closes the lists of trades and orderbooks once the program is over
+                upload_to_aws(fullpath, 'exchange-data-bucket', fullpath, self.access_key, self.secret_key)
 
         except Exception as e:
             print(e)

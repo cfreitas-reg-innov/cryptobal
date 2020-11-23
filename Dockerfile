@@ -9,9 +9,11 @@ COPY requirements.txt .
 
 # install dependencies
 RUN pip3 install -r requirements.txt
+RUN apt-get update
+RUN apt-get install dumb-init
 
 # copy the content of the local src directory to the working directory
 COPY ./api_consumer .
 
 # runs storeData file without arguments
-ENTRYPOINT ["python3", "storeData.py"]
+ENTRYPOINT ["dumb-init","python3", "storeData.py"]

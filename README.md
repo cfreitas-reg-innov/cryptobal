@@ -92,3 +92,65 @@ This is the expected file structure for the document holding the AWS keys. This 
     "secret_key": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
 }
 ```
+
+<br>
+
+# Docker
+Below the main commands used in docker to run the applications:
+
+Create a Dockerfile with the following structure:
+```
+# set base image (host OS)
+FROM python:3.8
+
+# set the working directory in the container
+WORKDIR /api_consumer
+
+# copy the dependencies file to the working directory
+COPY requirements.txt .
+
+# install dependencies
+RUN pip3 install -r requirements.txt
+
+# copy the content of the local api_consumer directory to the working directory
+COPY ./api_consumer .
+
+# runs storeData file without arguments
+ENTRYPOINT ["python3", "./storeData.py"]
+
+```
+
+Once the file is created, the following commands will be used:
+```
+# create a new image from the Dockerfile
+docker build -t <image name> .
+
+# create a new container for each exchange:
+docker run -it -d --rm --name container_kraken -p 5001:5000 api_image "Kraken" "XBT/USD" "10 Novembre 2020" && 
+docker run -it -d --rm --name container_coinbase -p 5002:5000 api_image "Coinbase" "ETH-USD" "10 Novembre 2020" && 
+docker run -it -d --rm --name container_binance -p 5003:5000 api_image "Binance" "btcusdt" "10 Novembre 2020"
+
+# start a previously created container
+docker container start container_kraken
+
+# execute bash inside the container
+docker exec -it container_kraken /bin/bash
+
+# get log from the container
+docker container logs --follow container_kraken
+
+# lists all images
+docker images
+
+# lists all containers
+docker ps -a
+
+# stops all containers
+docker stop container_kraken container_binance container_coinbase
+
+# remove container
+docker container rm <container name>
+
+# remove image
+docker rmi <image name>
+```

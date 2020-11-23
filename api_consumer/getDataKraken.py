@@ -51,7 +51,7 @@ class GetData():
     def on_close(self):
         for fullpath in self.paths:
             write_file(fullpath) # closes the lists of trades and orderbooks once the program is over
-            #upload_to_aws(fullpath, 'exchange-data-bucket', fullpath, self.access_key, self.secret_key)    
+            upload_to_aws(fullpath, 'exchange-data-bucket', fullpath, self.access_key, self.secret_key)    
 
         print("\n*End of processing")
 

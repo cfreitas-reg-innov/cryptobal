@@ -2,6 +2,7 @@ import getDataKraken, getDataBinance, getDataCoinbase
 import sys
 from sys import argv
 
+print(str(argv))
 script, exchange, asset, folder_name = argv
 
 exchange_class = getattr(sys.modules[__name__], 'getData' + exchange) # transforms exchange string into a class

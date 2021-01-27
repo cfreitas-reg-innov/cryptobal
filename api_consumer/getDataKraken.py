@@ -25,7 +25,7 @@ class GetData():
         self.subscription_values = {'book-10':[], 'trade':[]}
         self.paths = set()
 
-        self.maxLength = 10
+        self.maxLength = 100
     
     # define stream connection instance
     def websocket_connection(self):
@@ -101,11 +101,11 @@ class GetData():
                 self.paths.add(fullpath)
 
                 write_file(fullpath, content)
-                self.count[asset][1] += 1 
+                self.count[subscription][1] += 1 
 
-                if self.count[asset][1] == self.maxLength:
-                    self.count[asset][0] += 1
-                    self.count[asset][1] = 0
+                if self.count[subscription][1] == self.maxLength:
+                    self.count[subscription][0] += 1
+                    self.count[subscription][1] = 0
 
             except Exception as e:
                 print(e)        

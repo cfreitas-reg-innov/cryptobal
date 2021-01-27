@@ -25,7 +25,7 @@ class GetData():
         self.subscription_values = {'snapshot':'orderbook', 'l2update': 'orderbook', 'match':'trade'}
         self.paths = set()
 
-        self.maxLength = 2**10
+        self.maxLength = 10
    
     # define stream connection instance
     def websocket_connection(self):

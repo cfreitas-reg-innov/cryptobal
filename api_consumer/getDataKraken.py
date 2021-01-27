@@ -24,6 +24,7 @@ class GetData():
         # initializing variables for orderbooks and trades
         self.subscription_values = {'book-10':[], 'trade':[]}
         self.paths = set()
+        self.orderbook = {'bids': {}, 'asks': {}}
 
         self.maxLength = 100
     
@@ -53,6 +54,7 @@ class GetData():
             write_file(fullpath) # closes the lists of trades and orderbooks once the program is over
             #upload_to_aws(fullpath, 'exchange-data-bucket', fullpath, self.access_key, self.secret_key)    
 
+        print(self.orderbook)
         print("\n*End of processing")
 
     # run when websocket is initialised
@@ -91,6 +93,9 @@ class GetData():
         asset = message_json[3]
 
         if type(message_json) is list:
+            if subscription == 'book-10':
+                self.save_orderbook(content)
+
             date = "{:%Y_%m_%d}".format(datetime.now())
             path = join('data', self.folder_name, 'kraken', asset, subscription + '/')
 
@@ -108,4 +113,12 @@ class GetData():
                     self.count[subscription][1] = 0
 
             except Exception as e:
-                print(e)        
+                print(e)
+
+    def save_orderbook(self, content):
+        try:
+            self.orderbook['bids'] = content['as']
+            self.orderbook['asks'] = content['bs']
+
+        except Exception as e:
+            print('Not snapshot, only orderbook', e)

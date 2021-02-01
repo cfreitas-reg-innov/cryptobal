@@ -1,4 +1,6 @@
 import websocket, copy, json, os, time, zlib, bisect, traceback
+import pandas as pd
+import numpy as np
 from json import loads
 from os.path import join
 from datetime import datetime
@@ -25,8 +27,9 @@ class GetData():
         self.subscription_values = {'book-100':[], 'trade':[]}
         self.paths = set()
         self.orderbook = {'bids': {}, 'asks': {}}
+        self.orderbook_dataframe = pd.DataFrame()
 
-        self.maxLength = 100
+        self.maxLength = 1000
     
     # define stream connection instance
     def websocket_connection(self):
@@ -41,7 +44,7 @@ class GetData():
     
     # catch message
     def on_message(self, message):
-        print(message)
+        print('\n', message)
         self.process_message(message)
             
     # catch errors
@@ -52,7 +55,9 @@ class GetData():
     def on_close(self):
         for fullpath in self.paths:
             write_file(fullpath) # closes the lists of trades and orderbooks once the program is over
-            #upload_to_aws(fullpath, 'exchange-data-bucket', fullpath, self.access_key, self.secret_key)    
+            #upload_to_aws(fullpath, 'exchange-data-bucket', fullpath, self.access_key, self.secret_key) 
+
+        self.orderbook_dataframe.to_csv('data_test.csv', index = True)   
         print("\n*End of processing")
 
     # run when websocket is initialised
@@ -119,6 +124,10 @@ class GetData():
         try:
             self.orderbook['bids'] = content['bs']
             self.orderbook['asks'] = content['as']
+            
+            columns = self.get_ColNames(50)
+            self.orderbook_dataframe = self.create_Dataframe(columns)
+            self.update_dataframe(50)
 
         except Exception as e:
             print('Not snapshot, only orderbook', e)
@@ -128,23 +137,30 @@ class GetData():
         order_asks_list = []
         order_bids_list = []
 
-        new_asks_list = self.orderbook['asks']
-        new_bids_list = self.orderbook['bids']
+        try:
+            new_asks_list = self.orderbook['asks']
+            new_bids_list = self.orderbook['bids']
 
-        checksum = new_update['c']
-        print('\nchecksum:', checksum)
+            if 'a' in new_update:
+                order_asks_list = new_update['a']
+                new_asks_list = self.verify_and_insert(order_asks_list, 'asks')
+            
+            if 'b' in new_update:
+                order_bids_list = new_update['b']
+                new_bids_list = self.verify_and_insert(order_bids_list, 'bids')
 
-        if 'a' in new_update:
-            order_asks_list = new_update['a']
-            new_asks_list = self.verify_and_insert(order_asks_list, 'asks')
-        
-        if 'b' in new_update:
-            order_bids_list = new_update['b']
-            new_bids_list = self.verify_and_insert(order_bids_list, 'bids')
+            if 'c' in new_update:
+                checksum = new_update['c']
+                print('checksum:', checksum)
 
-        if self.verify_checksum(new_asks_list, new_bids_list, checksum):
-            self.orderbook['asks'] = new_asks_list
-            self.orderbook['bids'] = new_bids_list
+            if self.verify_checksum(new_asks_list, new_bids_list, checksum):
+                self.orderbook['asks'] = new_asks_list
+                self.orderbook['bids'] = new_bids_list
+                self.update_dataframe(50)
+
+        except Exception:
+            print(traceback.format_exc())
+
 
 
     def verify_and_insert(self, new_order_list, type):
@@ -176,44 +192,80 @@ class GetData():
             if type == 'bids':
                 aux_orderbook_list.sort(key=get_price, reverse=True)
                 
-        except Exception as e:
+        except Exception:
             print(traceback.format_exc())
             pass
 
-        print('novo orderbook:', aux_orderbook_list)
+        #print('novo orderbook:', aux_orderbook_list)
         
         return aux_orderbook_list
 
 
 
     def verify_checksum(self, asks, bids, original_checksum):
-            valid_checksum = False
-            print('asks to be verified:', asks[0:10])
-            print('bids to be verified:', bids[0:10])
+        valid_checksum = False
+        print('asks to be verified:', asks[0:10])
+        print('bids to be verified:', bids[0:10])
 
-            def apply_transformation(value):
-                value = str(value).replace('.', '')
-                value = str(value).lstrip('0')
-                return str(value)
+        def apply_transformation(value):
+            value = str(value).replace('.', '')
+            value = str(value).lstrip('0')
+            return str(value)
 
-            checksum = ''
+        checksum = ''
 
-            try:
-                for ask in asks[0:10]:
-                    checksum = checksum + apply_transformation(ask[0])
-                    checksum = checksum + apply_transformation(ask[1])
+        try:
+            for ask in asks[0:10]:
+                checksum = checksum + apply_transformation(ask[0])
+                checksum = checksum + apply_transformation(ask[1])
 
-                for bid in bids[0:10]:
-                    checksum = checksum + apply_transformation(bid[0])
-                    checksum = checksum + apply_transformation(bid[1])
+            for bid in bids[0:10]:
+                checksum = checksum + apply_transformation(bid[0])
+                checksum = checksum + apply_transformation(bid[1])
 
-                #print('Entire checksum: ' + checksum)
+            #print('Entire checksum: ' + checksum)
 
-                self.checksum = zlib.crc32(bytes(checksum, encoding='UTF-8'))
-                print('crc32 verific:', self.checksum)
-                valid_checksum = self.checksum is original_checksum
+            self.checksum = zlib.crc32(bytes(checksum, encoding='UTF-8'))
+            print('crc32 verific:', self.checksum)
+            valid_checksum = str(self.checksum) == original_checksum
 
-            except Exception as e:
-                print(e, 'error getting checksum')
+        except Exception as e:
+            print(e, 'error getting checksum')
 
-            return valid_checksum
+        return valid_checksum
+
+    def get_ColNames(self, depth):
+        columns = ['timestamp']
+        for i in range(depth):
+            columns.append('B' + str(i+1))
+            columns.append('VB' + str(i+1))
+        for i in range(depth):
+            columns.append('A' + str(i+1))
+            columns.append('VA' + str(i+1))
+        return columns
+
+
+    def create_Dataframe(self, columns):
+        return pd.DataFrame(columns = columns)
+
+
+    def update_dataframe(self, depth):
+        new_update = []
+
+        try:
+            new_update.append('timestamp')
+
+            for i in range(depth):
+                new_update.append(self.orderbook['bids'][i][0])
+                new_update.append(self.orderbook['bids'][i][1])
+
+            for i in range(depth):
+                new_update.append(self.orderbook['asks'][i][0])
+                new_update.append(self.orderbook['asks'][i][1])
+
+            self.orderbook_dataframe = self.orderbook_dataframe.append(pd.Series(new_update, index=self.orderbook_dataframe.columns ), ignore_index=True)
+            #print('\n', self.orderbook_dataframe, '\n')
+
+        except Exception as e:
+            print(traceback.format_exc())
+

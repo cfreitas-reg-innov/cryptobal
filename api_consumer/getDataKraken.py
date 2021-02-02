@@ -8,11 +8,13 @@ from modules.helpers import create_folder_structure, write_file, upload_to_aws
 
 class GetData():
     def __init__(self, asset='["XBT/USD"]', folder_name='noname', debug = False):
+        """
         with open('AWS_keys.json') as json_file:
             aws_keys = json.load(json_file)
 
         self.access_key = aws_keys["access_key"]
         self.secret_key = aws_keys["secret_key"]
+        """
         
         # initializing string variables
         self.asset = asset.split(',')

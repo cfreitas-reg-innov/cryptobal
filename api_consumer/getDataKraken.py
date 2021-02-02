@@ -131,7 +131,6 @@ class GetData():
                 self.orderbook['asks'] = content['as']
                 columns = self.get_column_names(self.dataframe_levels)
                 self.orderbook_dataframe = self.create_dataframe(columns)
-                self.update_dataframe(self.dataframe_levels, '0')
 
         except Exception:
             print(traceback.format_exc())
@@ -276,7 +275,6 @@ class GetData():
             date = "{:%Y_%m_%d}".format(datetime.now())
             path = join('data', self.folder_name, 'kraken', self.asset[0], self.orderbook_subscription + '/')
             filename = 'kraken_' + self.asset[0].replace('/', '_') + '_' + self.orderbook_subscription + '_' + 'dataframe' + '_' + str(date) + '.csv'
-            self.orderbook_dataframe.iloc[0,0] = self.orderbook_dataframe.iloc[1,0]
             self.orderbook_dataframe.to_csv(path + filename, index = True) 
 
         except Exception:

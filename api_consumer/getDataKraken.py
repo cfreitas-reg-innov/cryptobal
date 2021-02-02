@@ -17,18 +17,22 @@ class GetData():
         # initializing string variables
         self.asset = asset.split(',')
         self.folder_name = folder_name
+        self.depth = '100'
+        self.orderbook_subscription = 'book-' + self.depth
         self.token = 'uGuvmjij9MRa305SGm++IrRxOZvwZvF5Ra3hracbpG4'
-        self.count = {'trade' : [1,1], 'book-100' : [1,1]} # counts how many messages were processed, [0] = resets to '0' once maxLength is reached | [1] = total count
+        self.count = {'trade' : [1,1], self.orderbook_subscription : [1,1]} # counts how many messages were processed, [0] = resets to '0' once maxLength is reached | [1] = total count
         
         # initializing stream connection instance
         self.ws = self.websocket_connection()
         
         # initializing variables for orderbooks and trades
-        self.subscription_values = {'book-100':[], 'trade':[]}
+        self.subscription_values = {self.orderbook_subscription:[], 'trade':[]}
         self.paths = set()
         self.orderbook = {'bids': {}, 'asks': {}}
         self.orderbook_dataframe = pd.DataFrame()
 
+        
+        self.dataframe_levels = 50
         self.maxLength = 1000
     
     # define stream connection instance
@@ -57,14 +61,14 @@ class GetData():
             write_file(fullpath) # closes the lists of trades and orderbooks once the program is over
             #upload_to_aws(fullpath, 'exchange-data-bucket', fullpath, self.access_key, self.secret_key) 
 
-        self.orderbook_dataframe.to_csv('data_test.csv', index = True)   
+        self.export_dataframe()  
         print("\n*End of processing")
 
     # run when websocket is initialised
     def on_open(self):
         print('\n*Connecting to Kraken')
 
-        self.subscribe({"name": "book", "depth": 100, "token": self.token})
+        self.subscribe({"name": "book", "depth": int(self.depth), "token": self.token})
         self.subscribe({"name": "trade", "token": self.token})
 
     def subscribe(self, subscription_args):
@@ -80,7 +84,7 @@ class GetData():
     def run_forever(self):
         for asset in self.asset:
             try:
-                create_folder_structure(self.folder_name, 'kraken', asset, ['trade', 'book-100'])
+                create_folder_structure(self.folder_name, 'kraken', asset, ['trade', self.orderbook_subscription])
             except Exception as e:
                 print(e)
 
@@ -97,7 +101,7 @@ class GetData():
 
         if type(message_json) is list:
             for content in content_list:
-                if subscription == 'book-100':
+                if subscription == self.orderbook_subscription:
                     self.save_orderbook(content)
                     self.place_order(content)
 
@@ -117,25 +121,26 @@ class GetData():
                         self.count[subscription][0] += 1
                         self.count[subscription][1] = 0
 
-                except Exception as e:
-                    print(e)
+                except Exception:
+                    print(traceback.format_exc())
 
     def save_orderbook(self, content):
         try:
-            self.orderbook['bids'] = content['bs']
-            self.orderbook['asks'] = content['as']
-            
-            columns = self.get_ColNames(50)
-            self.orderbook_dataframe = self.create_Dataframe(columns)
-            self.update_dataframe(50)
+            if not self.orderbook['bids'] and not self.orderbook['asks']:
+                self.orderbook['bids'] = content['bs']
+                self.orderbook['asks'] = content['as']
+                columns = self.get_column_names(self.dataframe_levels)
+                self.orderbook_dataframe = self.create_dataframe(columns)
+                self.update_dataframe(self.dataframe_levels, '0')
 
-        except Exception as e:
-            print('Not snapshot, only orderbook', e)
+        except Exception:
+            print(traceback.format_exc())
 
 
     def place_order(self, new_update):
         order_asks_list = []
         order_bids_list = []
+        timestamp = ''
 
         try:
             new_asks_list = self.orderbook['asks']
@@ -144,10 +149,16 @@ class GetData():
             if 'a' in new_update:
                 order_asks_list = new_update['a']
                 new_asks_list = self.verify_and_insert(order_asks_list, 'asks')
+
+                if timestamp == '':
+                    timestamp = new_update['a'][0][2]
             
             if 'b' in new_update:
                 order_bids_list = new_update['b']
                 new_bids_list = self.verify_and_insert(order_bids_list, 'bids')
+
+                if timestamp == '':
+                    timestamp = new_update['b'][0][2]
 
             if 'c' in new_update:
                 checksum = new_update['c']
@@ -156,7 +167,7 @@ class GetData():
             if self.verify_checksum(new_asks_list, new_bids_list, checksum):
                 self.orderbook['asks'] = new_asks_list
                 self.orderbook['bids'] = new_bids_list
-                self.update_dataframe(50)
+                self.update_dataframe(self.dataframe_levels, timestamp)
 
         except Exception:
             print(traceback.format_exc())
@@ -166,7 +177,6 @@ class GetData():
     def verify_and_insert(self, new_order_list, type):
         index = -1
         aux_orderbook_list = self.orderbook[type]
-
 
         def get_price(elem):
             return elem[0]
@@ -188,24 +198,18 @@ class GetData():
                     else:
                         bisect.insort(aux_orderbook_list, new_order)
 
-               
             if type == 'bids':
                 aux_orderbook_list.sort(key=get_price, reverse=True)
                 
         except Exception:
             print(traceback.format_exc())
-            pass
 
-        #print('novo orderbook:', aux_orderbook_list)
-        
         return aux_orderbook_list
 
 
 
     def verify_checksum(self, asks, bids, original_checksum):
         valid_checksum = False
-        print('asks to be verified:', asks[0:10])
-        print('bids to be verified:', bids[0:10])
 
         def apply_transformation(value):
             value = str(value).replace('.', '')
@@ -223,18 +227,16 @@ class GetData():
                 checksum = checksum + apply_transformation(bid[0])
                 checksum = checksum + apply_transformation(bid[1])
 
-            #print('Entire checksum: ' + checksum)
-
             self.checksum = zlib.crc32(bytes(checksum, encoding='UTF-8'))
             print('crc32 verific:', self.checksum)
             valid_checksum = str(self.checksum) == original_checksum
 
-        except Exception as e:
-            print(e, 'error getting checksum')
+        except Exception:
+            print(traceback.format_exc())
 
         return valid_checksum
 
-    def get_ColNames(self, depth):
+    def get_column_names(self, depth):
         columns = ['timestamp']
         for i in range(depth):
             columns.append('B' + str(i+1))
@@ -245,27 +247,39 @@ class GetData():
         return columns
 
 
-    def create_Dataframe(self, columns):
+    def create_dataframe(self, columns):
         return pd.DataFrame(columns = columns)
 
 
-    def update_dataframe(self, depth):
+    def update_dataframe(self, depth, timestamp):
         new_update = []
 
         try:
-            new_update.append('timestamp')
+            new_update.append(timestamp)
 
             for i in range(depth):
-                new_update.append(self.orderbook['bids'][i][0])
-                new_update.append(self.orderbook['bids'][i][1])
+                new_update.append(np.round(float(self.orderbook['bids'][i][0]),2))
+                new_update.append(float(self.orderbook['bids'][i][1]))
 
             for i in range(depth):
-                new_update.append(self.orderbook['asks'][i][0])
-                new_update.append(self.orderbook['asks'][i][1])
+                new_update.append(np.round(float(self.orderbook['asks'][i][0]),2))
+                new_update.append(float(self.orderbook['asks'][i][1]))
 
             self.orderbook_dataframe = self.orderbook_dataframe.append(pd.Series(new_update, index=self.orderbook_dataframe.columns ), ignore_index=True)
-            #print('\n', self.orderbook_dataframe, '\n')
 
-        except Exception as e:
+        except Exception:
             print(traceback.format_exc())
+
+
+    def export_dataframe(self):
+        try:
+            date = "{:%Y_%m_%d}".format(datetime.now())
+            path = join('data', self.folder_name, 'kraken', self.asset[0], self.orderbook_subscription + '/')
+            filename = 'kraken_' + self.asset[0].replace('/', '_') + '_' + self.orderbook_subscription + '_' + 'dataframe' + '_' + str(date) + '.csv'
+            self.orderbook_dataframe.iloc[0,0] = self.orderbook_dataframe.iloc[1,0]
+            self.orderbook_dataframe.to_csv(path + filename, index = True) 
+
+        except Exception:
+            print(traceback.format_exc())
+
 

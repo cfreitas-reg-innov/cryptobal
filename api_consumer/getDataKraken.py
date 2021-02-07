@@ -1,4 +1,4 @@
-import websocket, copy, json, os, time, zlib, bisect, traceback
+import websocket, copy, json, os, time, zlib, bisect, traceback, decimal
 import pandas as pd
 import numpy as np
 from json import loads
@@ -257,14 +257,15 @@ class GetData():
 
         try:
             new_update.append(timestamp)
+            decimal_places = decimal.Decimal
 
             for i in range(depth):
                 new_update.append(np.round(float(self.orderbook['bids'][i][0]),2))
-                new_update.append(float(self.orderbook['bids'][i][1]))
+                new_update.append(decimal_places(self.orderbook['bids'][i][1]))
 
             for i in range(depth):
                 new_update.append(np.round(float(self.orderbook['asks'][i][0]),2))
-                new_update.append(float(self.orderbook['asks'][i][1]))
+                new_update.append(decimal_places(self.orderbook['asks'][i][1]))
 
             self.orderbook_dataframe = self.orderbook_dataframe.append(pd.Series(new_update, index=self.orderbook_dataframe.columns ), ignore_index=True)
 
